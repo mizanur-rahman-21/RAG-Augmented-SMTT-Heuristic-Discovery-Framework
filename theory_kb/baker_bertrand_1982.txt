@@ -1,0 +1,11 @@
+Title: A Dynamic Priority Rule for Scheduling Against Due-Dates
+Authors: K. R. Baker and J. W. M. Bertrand (1982)
+Source: Journal of Operations Management, 3(1), 37-42.
+
+Key Insights for Heuristic Design:
+1. The Modified Due Date (MDD) rule defines a dynamic priority:
+   priority_j(t) = max(t + p_j, d_j)
+2. At scheduling time t, if job j would complete after its due date (t + p_j >= d_j), its effective priority is t + p_j. Minimizing t + p_j across unscheduled jobs is equivalent to scheduling the shortest processing time job (SPT).
+3. If job j would complete before its due date (t + p_j < d_j), its effective priority is d_j, which corresponds to scheduling the earliest due date job (EDD).
+4. MDD acts as an adaptive hybrid that automatically transitions from EDD (slack preservation) to SPT (tardiness minimization) as the machine clock advances.
+5. Simple convex combinations of the form w1*(t + p_j) + w2*d_j embedded inside max() often collapse mathematically to standard MDD whenever w1 + w2 = 1.

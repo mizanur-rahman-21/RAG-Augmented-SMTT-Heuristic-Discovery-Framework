@@ -1,0 +1,73 @@
+# ==============================================================================
+# SMTT RAG-Augmented Heuristic Discovery Configuration
+# Single-Machine Total Tardiness Scheduling (1 || \sum T_j)
+# ==============================================================================
+
+experiment:
+  name: "smtt_rag_ablation_study"
+  problem: "1 || sum Tj"
+  n_jobs: 20
+
+# Strict Data Isolation Policy:
+# - Train instances: Candidate scoring & feedback
+# - Val instances: Model selection (best candidate per condition/seed)
+# - Audit instances: Novelty screening (CLONE vs KNOWN vs GENUINE)
+# - Locked Test seeds: Held-out final benchmark evaluation only (NEVER during discovery)
+seeds:
+  train_seed: 10001
+  val_seed: 20002
+  audit_seed: 99999
+  locked_test_seeds:
+    - 30003
+    - 31001
+    - 31002
+    - 31003
+
+# Four Controlled RAG Conditions
+conditions:
+  - "no_rag"
+  - "theory_rag"
+  - "code_rag"
+  - "dual_rag"
+
+# LLM Backend Configuration
+llm:
+  # Supported backends: "ollama" (default local), "openai_compatible" (vLLM, TGI, LocalAI)
+  backend: "ollama"
+  base_url: "http://localhost:11434"
+  model_name: "qwen2.5-coder:7b-instruct-q4_K_M"
+  temperature: 0.7
+  top_p: 0.95
+  max_output_tokens: 1024
+  timeout_s: 120.0
+  # API key (only required if backend is openai_compatible with auth)
+  api_key: "EMPTY"
+
+# Pilot Run Settings (Quick validation of full discovery loop)
+pilot:
+  discovery_seeds: [101, 102]
+  iterations_per_run: 3
+  train_instances: 50
+  val_instances: 50
+  audit_instances: 20
+  timeout_per_candidate_s: 2.0
+
+# Full Ablation Study Settings (Production experiment: 4 conds x 5 seeds x 25 iters = 500 calls)
+full_ablation:
+  discovery_seeds: [101, 102, 103, 104, 105]
+  iterations_per_run: 25
+  train_instances: 800
+  val_instances: 800
+  audit_instances: 40
+  timeout_per_candidate_s: 3.0
+
+# Baselines for Equivalence and Novelty Classification
+baselines_for_audit:
+  - "SPT"
+  - "EDD"
+  - "MDD"
+  - "Panneerselvam"
+  - "PSK"
+  - "MDDC"
+  - "Augmented MDDC"
+  - "AMDDC + APD"

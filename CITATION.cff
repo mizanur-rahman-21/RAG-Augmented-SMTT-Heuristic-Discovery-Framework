@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: "If you use this software in academic work, please cite it as below."
+authors:
+  - family-names: "Research Contributors"
+    given-names: "SMTT"
+title: "RAG-Augmented LLM Heuristic Discovery for Single-Machine Total Tardiness Scheduling"
+version: 1.0.0
+date-released: 2026-11-08
+url: "https://github.com/placeholder/smtt-rag-heuristic-discovery"
+license: MIT

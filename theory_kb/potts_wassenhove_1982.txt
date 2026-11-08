@@ -1,0 +1,11 @@
+Title: A Decomposition Algorithm for the Single Machine Total Tardiness Problem
+Authors: C. N. Potts and L. N. Van Wassenhove (1982)
+Source: Operations Research, 30(2), 378-389.
+
+Key Insights for Heuristic Design:
+1. In single-machine total tardiness scheduling (1 || sum Tj), the trade-off between processing time p_j and due date d_j is fundamentally non-linear.
+2. If all jobs are tardy (t >= max(d_j)), the total tardiness objective is equivalent to minimizing sum of completion times, for which Shortest Processing Time (SPT) is strictly optimal.
+3. If no jobs are tardy (C_j <= d_j for all j), Earliest Due Date (EDD) is strictly optimal.
+4. For instances with intermediate due date tightness (measured by Tardiness Factor TF and Relative Due Date Range RDD), optimal job orderings balance SPT-like and EDD-like behavior.
+5. Exact solution through dynamic programming follows the backward subset recursion:
+   V(J) = min_{j in J} [ V(J \ {j}) + max(0, C(J) - d_j) ], where C(J) = sum_{k in J} p_k.

@@ -1,0 +1,10 @@
+Title: Extensions of the Modified Due Date Rule
+Authors: J. C. Bean and N. G. Hall (1985)
+Source: Naval Research Logistics Quarterly, 32(3), 503-506.
+
+Key Insights for Heuristic Design:
+1. Dynamic dispatching rules schedule jobs one-by-one looking only at current time t. Because later decisions affect completion times of all subsequent jobs, early choices may become sub-optimal retrospectively.
+2. In Augmented MDD, after each job j* is appended to the schedule, a backward relocation evaluation is performed:
+   Each previously scheduled job in S \ {j*} is tested for relocation to the tail of S.
+3. If moving an earlier job to the current tail reduces prefix tardiness, the relocation is accepted.
+4. Relocations mitigate the myopic bias of greedy forward construction without incurring exponential computational cost.

@@ -1,0 +1,10 @@
+Title: One-Machine Sequencing to Minimize Certain Functions of Job Tardiness
+Author: H. Emmons (1969)
+Source: Operations Research, 17(4), 701-715.
+
+Key Insights for Heuristic Design:
+1. Dominance Rules establish conditions under which job i must precede job j in an optimal schedule:
+   Condition A: If p_i <= p_j and d_i <= max(d_j, C_i), then there exists an optimal schedule where job i precedes job j.
+   Condition B: If p_i <= p_j and d_i <= d_j, and d_j >= sum_{k != j} p_k, then job i precedes job j.
+2. Dominance checks can prune unpromising candidates during dynamic dispatching: if an unscheduled job is strictly dominated by another unscheduled job, its priority should be depressed.
+3. Slack-based priority scaling: The remaining slack s_j(t) = d_j - (t + p_j) measures margin of safety. Jobs with negative slack (already tardy) should prioritize processing time ratio, whereas jobs with positive slack should prioritize due date tightness.
