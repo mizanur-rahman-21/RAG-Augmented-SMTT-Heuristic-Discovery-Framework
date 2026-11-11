@@ -23,7 +23,14 @@ import numpy as np
 from scipy import stats
 
 
+def _safe_import(name, globals=None, locals=None, fromlist=(), level=0):
+    if name in ("numpy", "math"):
+        return __import__(name, globals, locals, fromlist, level)
+    raise ImportError(f"Import of module '{name}' is disallowed in sandbox.")
+
+
 SAFE_BUILTINS = {
+    "__import__": _safe_import,
     "range": range,
     "len": len,
     "min": min,
@@ -41,7 +48,67 @@ SAFE_BUILTINS = {
     "zip": zip,
     "sorted": sorted,
     "print": lambda *args, **kwargs: None,
+    "TimeoutError": TimeoutError,
+    "RuntimeError": RuntimeError,
+    "ValueError": ValueError,
+    "TypeError": TypeError,
+    "Exception": Exception,
 }
+
+
+class LoopGuardTransformer(ast.NodeTransformer):
+    """
+    Transforms AST to inject a step counter into while loops.
+    Guarantees that infinite loops terminate immediately with TimeoutError.
+    """
+    def __init__(self, max_iters: int = 10000):
+        self.max_iters = max_iters
+
+    def visit_FunctionDef(self, node: ast.FunctionDef) -> ast.FunctionDef:
+        self.generic_visit(node)
+        # Prepend: _loop_guard = [0] at start of function
+        init_guard = ast.Assign(
+            targets=[ast.Name(id="_loop_guard", ctx=ast.Store())],
+            value=ast.List(elts=[ast.Constant(value=0)], ctx=ast.Load()),
+        )
+        node.body.insert(0, init_guard)
+        return node
+
+    def visit_While(self, node: ast.While) -> ast.While:
+        self.generic_visit(node)
+        inc = ast.AugAssign(
+            target=ast.Subscript(
+                value=ast.Name(id="_loop_guard", ctx=ast.Load()),
+                slice=ast.Constant(value=0),
+                ctx=ast.Store(),
+            ),
+            op=ast.Add(),
+            value=ast.Constant(value=1),
+        )
+        check = ast.If(
+            test=ast.Compare(
+                left=ast.Subscript(
+                    value=ast.Name(id="_loop_guard", ctx=ast.Load()),
+                    slice=ast.Constant(value=0),
+                    ctx=ast.Load(),
+                ),
+                ops=[ast.Gt()],
+                comparators=[ast.Constant(value=self.max_iters)],
+            ),
+            body=[
+                ast.Raise(
+                    exc=ast.Call(
+                        func=ast.Name(id="TimeoutError", ctx=ast.Load()),
+                        args=[ast.Constant(value="Candidate loop iteration limit exceeded (infinite loop protection)")],
+                        keywords=[],
+                    ),
+                    cause=None,
+                )
+            ],
+            orelse=[],
+        )
+        node.body = [inc, check] + node.body
+        return node
 
 
 def scan_code_ast(code_str: str) -> Tuple[bool, str]:
@@ -51,10 +118,19 @@ def scan_code_ast(code_str: str) -> Tuple[bool, str]:
     except SyntaxError as e:
         return False, f"SyntaxError: {e}"
 
-    disallowed = (ast.Import, ast.ImportFrom, ast.Global, ast.Nonlocal, ast.Try)
+    disallowed_nodes = (ast.Global, ast.Nonlocal, ast.Try)
+    allowed_modules = ("numpy", "math")
+
     for node in ast.walk(tree):
-        if isinstance(node, disallowed):
+        if isinstance(node, disallowed_nodes):
             return False, f"Disallowed AST node: {type(node).__name__}"
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                if alias.name not in allowed_modules:
+                    return False, f"Disallowed import: {alias.name}"
+        if isinstance(node, ast.ImportFrom):
+            if node.module not in allowed_modules:
+                return False, f"Disallowed import from: {node.module}"
         if isinstance(node, ast.Call):
             if isinstance(node.func, ast.Name):
                 if node.func.id in ("eval", "exec", "open", "__import__", "compile"):
@@ -76,7 +152,12 @@ def safe_execute_candidate(code_str: str, entry_point: str = "custom_heuristic")
     local_scope: Dict[str, Any] = {}
 
     try:
-        exec(textwrap.dedent(code_str).strip(), safe_globals, local_scope)
+        dedented = textwrap.dedent(code_str).strip()
+        tree = ast.parse(dedented)
+        tree = LoopGuardTransformer(max_iters=10000).visit(tree)
+        ast.fix_missing_locations(tree)
+        compiled = compile(tree, "<candidate>", "exec")
+        exec(compiled, safe_globals, local_scope)
     except Exception as e:
         return False, None, f"Execution failed during compile: {e}"
 

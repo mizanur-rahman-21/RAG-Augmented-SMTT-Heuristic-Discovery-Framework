@@ -1,0 +1,85 @@
+# ==============================================================================
+# SMTT Heuristic Discovery Configuration (Engine v2)
+# Single-Machine Total Tardiness Scheduling (1 || \sum T_j)
+# ==============================================================================
+
+experiment:
+  name: "smtt_improved_discovery_engine_v2"
+  problem: "1 || sum Tj"
+  n_jobs: 20
+
+# Strict Data Isolation Policy:
+# - Train instances: Candidate scoring & feedback
+# - Val instances: Model selection & Pareto frontier evaluation
+# - Audit instances: Multi-tier novelty screening & rank correlation
+# - Locked Test seeds: Held-out final benchmark evaluation only (NEVER exposed during discovery)
+seeds:
+  train_seed: 10001
+  val_seed: 20002
+  audit_seed: 99999
+  locked_test_seeds:
+    - 30003
+    - 31001
+    - 31002
+    - 31003
+
+# Five Controlled Experimental Conditions
+conditions:
+  - "no_rag"
+  - "theory_rag"
+  - "code_rag"
+  - "dual_rag"
+  - "evolution_rag"
+
+# LLM Backend Configuration
+llm:
+  backend: "ollama"
+  base_url: "http://localhost:11434"
+  model_name: "qwen2.5-coder:7b-instruct-q4_K_M"
+  temperature: 0.7
+  top_p: 0.95
+  max_output_tokens: 1536
+  timeout_s: 120.0
+  api_key: "EMPTY"
+
+# Multi-Criteria Candidate Selection Weights
+selection_weights:
+  performance: 0.50     # Weight for validation tardiness quality
+  novelty: 0.30         # Weight for behavioral/structural divergence from baselines
+  efficiency: 0.10      # Weight for per-instance execution speed
+  diversity: 0.10       # Weight for diversity against population elites
+  max_runtime_ms: 5.0   # Maximum acceptable execution latency per instance
+
+# Evolution-RAG Parameters
+evolution:
+  max_elites: 10
+  max_failures: 10
+  top_k_elites_in_prompt: 2
+  top_k_failures_in_prompt: 2
+
+# Smoke Test Configuration (Quick single-call verification)
+smoke_test:
+  discovery_seeds: [101]
+  iterations_per_run: 1
+  train_instances: 10
+  val_instances: 10
+  audit_instances: 5
+  timeout_per_candidate_s: 2.0
+
+# Pilot Study Settings (Fast evaluation across all 5 conditions)
+pilot_v2:
+  discovery_seeds: [101, 102]
+  iterations_per_run: 3
+  train_instances: 50
+  val_instances: 50
+  audit_instances: 20
+  timeout_per_candidate_s: 2.0
+
+# Full Production Ablation Settings
+full_ablation_v2:
+  discovery_seeds: [101, 102, 103, 104, 105]
+  iterations_per_run: 20
+  train_instances: 800
+  val_instances: 800
+  audit_instances: 40
+  timeout_per_candidate_s: 3.0

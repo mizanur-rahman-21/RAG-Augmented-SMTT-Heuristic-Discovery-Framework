@@ -15,7 +15,7 @@ class TestSandboxAndAudit(unittest.TestCase):
     def test_ast_scanner_rejections(self):
         unsafe_snippets = [
             "import os\ndef custom_heuristic(p, d):\n    return np.argsort(d)",
-            "from math import sqrt\ndef custom_heuristic(p, d):\n    return np.argsort(d)",
+            "from subprocess import Popen\ndef custom_heuristic(p, d):\n    return np.argsort(d)",
             "def custom_heuristic(p, d):\n    open('secret.txt', 'w')\n    return np.argsort(d)",
             "def custom_heuristic(p, d):\n    eval('2+2')\n    return np.argsort(d)",
             "def custom_heuristic(p, d):\n    exec('x=1')\n    return np.argsort(d)",
@@ -27,6 +27,7 @@ class TestSandboxAndAudit(unittest.TestCase):
 
     def test_ast_scanner_allows_clean_code(self):
         clean_snippet = """
+import numpy as np
 def custom_heuristic(p, d):
     n = len(p)
     return np.argsort(d)

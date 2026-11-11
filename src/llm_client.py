@@ -123,20 +123,24 @@ class OllamaClient(LLMClient):
                 "error": f"Failed to connect to Ollama at {self.base_url}: {e}",
             }
 
-    def generate(self, prompt: str) -> LLMGenerationResult:
+    def generate(self, prompt: str, seed: Optional[int] = None) -> LLMGenerationResult:
         generate_url = f"{self.base_url}/api/generate"
         prompt_hash = hashlib.sha256(prompt.encode("utf-8")).hexdigest()
         timestamp_utc = datetime.now(timezone.utc).isoformat()
+
+        options = {
+            "temperature": self.temperature,
+            "top_p": self.top_p,
+            "num_predict": self.max_tokens,
+        }
+        if seed is not None:
+            options["seed"] = int(seed)
 
         payload = {
             "model": self.model,
             "prompt": prompt,
             "stream": False,
-            "options": {
-                "temperature": self.temperature,
-                "top_p": self.top_p,
-                "num_predict": self.max_tokens,
-            },
+            "options": options,
         }
 
         t0 = time.perf_counter()
